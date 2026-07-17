@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Northstar — App-shell design options (incl. Wayfinder Labs variation)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Arimo:wght@500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ============ doc chrome (not part of any option) ============ */
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #eceff3; color: #1a1f24; line-height: 1.5; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 24px 120px; }
+  .doc-h { border-bottom: 3px solid #14181d; padding-bottom: 14px; margin-bottom: 8px; }
+  .doc-h h1 { margin: 0 0 4px; font-size: 26px; }
+  .doc-h p { margin: 0; color: #555e68; max-width: 78ch; }
+  .meta { font-size: 13px; color: #69727e; margin: 10px 0 26px; }
+  .meta b { color: #14181d; }
+  h2.sec { font-size: 15px; text-transform: uppercase; letter-spacing: 0.12em; color: #69727e; margin: 44px 0 6px; }
+  .secnote { font-size: 14px; color: #555e68; margin: 0 0 16px; max-width: 88ch; }
+  .frame { border: 1px solid #d5dae1; border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 28px; }
+  .frame-label { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 16px; background: #14181d; color: #fff; font-size: 13px; }
+  .frame-label .tag { color: #9aa4b0; }
+  .spec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+  table.spec { width: 100%; border-collapse: collapse; font-size: 13.5px; background: #fff; border: 1px solid #d5dae1; border-radius: 8px; overflow: hidden; }
+  table.spec th { text-align: left; background: #f4f6f8; padding: 8px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #69727e; }
+  table.spec td { padding: 8px 12px; border-top: 1px solid #e8ebef; vertical-align: top; }
+  .sw { display: inline-block; width: 15px; height: 15px; border-radius: 3px; vertical-align: -2px; margin-right: 7px; border: 1px solid rgba(0,0,0,.14); }
+  code { font-family: "Roboto Mono", monospace; font-size: 12.5px; background: #f0f2f5; padding: 1px 5px; border-radius: 4px; }
+  .dd { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .do, .dont { background: #fff; border: 1px solid #d5dae1; border-radius: 8px; padding: 14px 18px; font-size: 14px; }
+  .do { border-top: 3px solid #15803D; } .dont { border-top: 3px solid #b3402f; }
+  .do h4, .dont h4 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
+  .do h4 { color: #15803D; } .dont h4 { color: #b3402f; }
+  ul { margin: 0; padding-left: 20px; } li { margin-bottom: 6px; }
+
+  /* ============ shared mockup structure ============ */
+  .mock { font-family: Inter, system-ui, sans-serif; }
+  .mock .mast { display: flex; align-items: center; gap: 14px; padding: 13px 22px; }
+  .mock .mast .word { font-weight: 700; font-size: 16px; letter-spacing: .2px; }
+  .mock .mast nav { display: flex; gap: 18px; margin-left: auto; font-size: 13px; }
+  .mock .body { padding: 18px 22px 26px; }
+  .mock .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; }
+  .mock .inp { border-radius: 6px; padding: 7px 11px; font-size: 13.5px; flex: 1 1 280px; }
+  .mock .ctl { border-radius: 6px; padding: 7px 11px; font-size: 13px; white-space: nowrap; }
+  .mock .go { border-radius: 6px; padding: 7px 16px; font-size: 13.5px; font-weight: 600; }
+  .mock .statusline { font-size: 12.5px; margin: 10px 0 14px; }
+  .mock table.res { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .mock table.res th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; padding: 7px 10px; }
+  .mock table.res td { padding: 9px 10px; vertical-align: top; }
+  .mock .t { font-weight: 600; }
+  .mock .sub { font-size: 12.5px; margin-top: 2px; }
+  .mock .b { display: inline-block; font-size: 11px; font-weight: 600; padding: 1.5px 8px; border-radius: 999px; margin-left: 6px; vertical-align: 1px; }
+  .mock .snip { font-size: 12.5px; font-style: italic; padding: 6px 10px; margin-top: 6px; border-radius: 0 4px 4px 0; }
+  .mock .snip mark { font-style: normal; font-weight: 600; padding: 0 2px; border-radius: 2px; }
+  .mock .due { font-size: 13px; white-space: nowrap; } .mock .due .d { display: block; font-size: 11px; }
+  .mock .docsn { display: inline-block; min-width: 26px; text-align: center; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 7px; }
+  .mock .spec-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 14px 22px 20px; border-top: 1px dashed #d5dae1; }
+  .mock .spec-row .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; width: 100%; }
+
+  /* ============ BEFORE — the current shell, faithfully ============ */
+  .before .mock { background: #f7f8fa; color: #1a1f24; }
+  .before .mast { background: #0e2a47; color: #fff; }
+  .before .mast .word { font-size: 18px; font-weight: 600; }
+  .before .mast .tag { color: #a9c3dd; font-size: 13px; }
+  .before .mast nav a { color: #fff; text-decoration: none; }
+  .before .panel { background: #fff; border: 1px solid #dfe4ea; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .before .inp, .before .ctl { border: 1px solid #dfe4ea; background: #fff; color: #1a1f24; }
+  .before .go { background: #2f9e6f; border: 1px solid #2f9e6f; color: #fff; }
+  .before .statusline { color: #5b6672; }
+  .before table.res th { color: #5b6672; border-bottom: 1px solid #dfe4ea; }
+  .before table.res td { border-bottom: 1px solid #eef1f4; }
+  .before .t a { color: #143a61; }
+  .before .sub { color: #5b6672; }
+  .before .b.navy { background: #0e2a47; color: #fff; } .before .b.green { background: #e8f5ee; color: #2f9e6f; }
+  .before .b.amber { background: #fbf1df; color: #b06a00; } .before .b.gray { background: #eef1f4; color: #5b6672; }
+  .before .snip { background: #f7f8fa; border-left: 2px solid #2f9e6f; color: #3d4750; }
+  .before .snip mark { background: #fff3cd; }
+  .before .docsn { background: #e8f5ee; color: #2f9e6f; }
+  .before .due .d { color: #5b6672; }
+
+  /* ============ OPTION A — "Refined current": same hues, disciplined ============ */
+  .optA .mock { background: #f6f7f9; color: #1c2229; }
+  .optA .mast { background: #0e2a47; color: #fff; border-bottom: 3px solid #2f9e6f; }
+  .optA .mast .word { font-family: Arimo, Arial, sans-serif; font-size: 15px; letter-spacing: .4px; text-transform: uppercase; }
+  .optA .mast .tag { color: #8fb3d4; font-size: 12px; }
+  .optA .mast nav a { color: #d7e3ef; text-decoration: none; font-weight: 500; }
+  .optA .mast nav a.on { color: #fff; border-bottom: 2px solid #2f9e6f; padding-bottom: 3px; }
+  .optA .panel { background: #fff; border: 1px solid #dde3ea; border-radius: 10px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(14,42,71,.05); }
+  .optA .inp, .optA .ctl { border: 1px solid #ccd5df; background: #fff; }
+  .optA .inp:focus { outline: 2px solid #2f9e6f33; }
+  .optA .go { background: #1f7a52; border: 1px solid #1f7a52; color: #fff; }
+  .optA .statusline { color: #5b6672; }
+  .optA table.res th { color: #5b6672; border-bottom: 2px solid #dde3ea; }
+  .optA table.res td { border-bottom: 1px solid #edf0f4; }
+  .optA table.res tr:hover td { background: #f6faf8; }
+  .optA .t a { color: #0e2a47; text-decoration: none; border-bottom: 1px solid #b9cbdc; }
+  .optA .sub { color: #5b6672; }
+  .optA .b.navy { background: #e7eef5; color: #0e2a47; } .optA .b.green { background: #e3f2ea; color: #1f7a52; }
+  .optA .b.amber { background: #faf0dd; color: #93590a; } .optA .b.gray { background: #eef1f4; color: #5b6672; }
+  .optA .snip { background: #f8faf9; border-left: 3px solid #2f9e6f; color: #38424c; }
+  .optA .snip mark { background: #d9f0e4; color: #14532d; }
+  .optA .docsn { background: #e3f2ea; color: #1f7a52; }
+  .optA .due .d { color: #93590a; font-weight: 600; }
+
+  /* ============ OPTION B — Wayfinder Labs platform variation ============ */
+  .optB .mock { background: #F5F7FB; color: #0B1B3D; }
+  .optB .mast { background: #061D52; color: #fff; position: relative; }
+  .optB .mast::after { /* the facet bar — the logo's arrow geometry as a 4-color rule */
+    content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 3px;
+    background: linear-gradient(90deg, #16A34A 0 22%, #7DF090 22% 30%, #84A1EB 30% 38%, #2349A1 38% 100%);
+  }
+  .optB .mast .mark { width: 26px; height: 20px; flex: none; }
+  .optB .mast .word { font-family: Arimo, Arial, sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .3px; }
+  .optB .mast .word .labs { color: #84A1EB; font-weight: 500; }
+  .optB .mast .tag { color: #8fa3d9; font-size: 12px; }
+  .optB .mast nav a { color: #cdd8f2; text-decoration: none; font-weight: 500; }
+  .optB .mast nav a.on { color: #fff; border-bottom: 2px solid #7DF090; padding-bottom: 3px; }
+  .optB .panel { background: #fff; border: 1px solid #DBE2EF; border-radius: 10px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(6,29,82,.06); }
+  .optB .inp, .optB .ctl { border: 1px solid #C6D0E2; background: #fff; color: #0B1B3D; }
+  .optB .go { background: #15803D; border: 1px solid #15803D; color: #fff; }
+  .optB .statusline { color: #56618a; }
+  .optB table.res th { color: #56618a; border-bottom: 2px solid #DBE2EF; }
+  .optB table.res td { border-bottom: 1px solid #EBEFF6; }
+  .optB table.res tr:hover td { background: #f2f7f4; }
+  .optB .t a { color: #2349A1; text-decoration: none; }
+  .optB .t a:hover { text-decoration: underline; }
+  .optB .sub { color: #56618a; }
+  .optB .mono, .optB .sub .id { font-family: "Roboto Mono", monospace; font-size: 12px; }
+  .optB .b.navy { background: #E4EAF8; color: #2349A1; } .optB .b.green { background: #E7F6ED; color: #15803D; }
+  .optB .b.amber { background: #FCF0DC; color: #A16207; } .optB .b.gray { background: #EDF0F6; color: #56618a; }
+  .optB .snip { background: #F7FAF8; border-left: 3px solid #16A34A; color: #33406b; }
+  .optB .snip mark { background: #D8F3E2; color: #14532D; }
+  .optB .docsn { background: #E7F6ED; color: #15803D; }
+  .optB .due .d { color: #A16207; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="doc-h">
+    <h1>Northstar — app-shell design options</h1>
+    <p>Proposal for the platform work surface (search, profiles, watchlists, feed). <b>Scope note:</b> the
+    Meridian deliverable brand (navy/gold, chosen in planning/02) is client-facing output and is <b>not touched</b>
+    by this decision — it is scoped under <code>.meridian</code> precisely so the two can differ.</p>
+  </div>
+  <p class="meta"><b>Status:</b> awaiting direction approval · <b>Prepared:</b> 2026-07-16 ·
+  <b>Implementation cost either way:</b> a token swap in <code>globals.css</code> + the new <code>src/components/ui</code>
+  primitives — adopted screens restyle without markup churn. Mock content below is <b>real data</b> from the live corpus
+  (the BPMN radar search, 710,831 notices).</p>
+
+  <h2 class="sec">Current state — for honest comparison</h2>
+  <p class="secnote">The shell today: placeholder tokens ("a light nod to Wayfinder", per its own CSS), 254 ad-hoc inline
+  style objects, three visual dialects. Functional, not designed.</p>
+  <div class="frame before" id="before">
+    <div class="frame-label"><span>BEFORE — current shell</span><span class="tag">as shipped today</span></div>
+    <div class="mock">
+      <div class="mast">
+        <span class="word">Solicitation Ingestion</span>
+        <span class="tag">Slice 1 · L / M extraction with unpaired-item flags</span>
+        <nav><a href="#">Opportunity Search →</a><a href="#">Protest deadlines →</a><a href="#">Glossary →</a></nav>
+      </div>
+      <div class="body">
+        <div class="panel">
+          <div class="filters">
+            <input class="inp" value="bpmn">
+            <span class="go">Search corpus</span>
+            <span class="ctl">NAICS — type to filter…</span>
+            <span class="ctl">Active only ▾</span>
+            <span class="ctl">Sort: relevance ▾</span>
+          </div>
+          <div class="statusline">Corpus: <b>710,831</b> notices · 78,811 active · imported <b>today 12:09 PM</b> · <b>2,820</b> notices with harvested documents</div>
+        </div>
+        <div class="panel">
+          <table class="res">
+            <tr><th>Opportunity</th><th style="width:130px">Agency</th><th style="width:86px">Due</th><th style="width:56px">Docs</th></tr>
+            <tr>
+              <td>
+                <span class="t"><a href="#">R408--AMENDMENT to RFI - BA Health Architecture Services and Standardization</a></span>
+                <div class="sub">36C24C26Q0018 · Special Notice · NAICS 541612<span class="b navy">MATCHED IN P01-DRAFT_BA_IDIQ_PWS…DOCX</span></div>
+                <div class="snip">…modeling session facilitation utilizing Business Process Model and Notation (<mark>BPMN</mark>) and as needed support for process driven requirements capture…</div>
+              </td>
+              <td class="sub">VETERANS AFFAIRS, DEPARTMENT</td>
+              <td class="due">2026-07-23 <span class="d">7d</span></td>
+              <td><span class="docsn">2</span></td>
+            </tr>
+            <tr>
+              <td>
+                <span class="t"><a href="#">Screening Information Request (SIR) — Strategic Sourcing (SAVES)</a></span>
+                <div class="sub">697DCK-25-R-00302 · Solicitation · NAICS 541519 · Partial SB Set-Aside<span class="b navy">MATCHED IN ATTACHMENT_6__SCHEDULE_B…XLSX</span></div>
+              </td>
+              <td class="sub">TRANSPORTATION, DEPARTMENT O</td>
+              <td class="due">2026-07-21 <span class="d">5d</span></td>
+              <td><span class="docsn">33</span></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <div class="spec-row">
+        <span class="lbl">Specimens</span>
+        <span class="b navy">Solicitation</span><span class="b green">active</span><span class="b amber">due · 5d</span><span class="b gray">archived</span>
+        <span class="go">Primary action</span><span class="ctl">Secondary</span>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="sec">Option A — refined current</h2>
+  <p class="secnote">Keep today's hues (navy <code>#0e2a47</code>, green <code>#2f9e6f</code>); add the discipline the
+  placeholder never had: an Arimo display face, active-nav state, hover rows, darker action green for contrast,
+  amber urgency on deadlines. The safe baseline — cheapest possible adoption, no brand statement.</p>
+  <div class="frame optA" id="option-a">
+    <div class="frame-label"><span>OPTION A — refined current</span><span class="tag">same palette, disciplined</span></div>
+    <div class="mock">
+      <div class="mast">
+        <span class="word">Northstar</span>
+        <span class="tag">Federal opportunity intelligence</span>
+        <nav><a href="#" class="on">Opportunities</a><a href="#">Watchlists</a><a href="#">Protest</a><a href="#">Glossary</a></nav>
+      </div>
+      <div class="body">
+        <div class="panel">
+          <div class="filters">
+            <input class="inp" value="bpmn">
+            <span class="go">Search corpus</span>
+            <span class="ctl">NAICS — type to filter…</span>
+            <span class="ctl">Active only ▾</span>
+            <span class="ctl">Sort: relevance ▾</span>
+          </div>
+          <div class="statusline">Corpus: <b>710,831</b> notices · 78,811 active · imported <b>today 12:09</b> · <b>2,820</b> with harvested documents</div>
+        </div>
+        <div class="panel">
+          <table class="res">
+            <tr><th>Opportunity</th><th style="width:130px">Agency</th><th style="width:86px">Due</th><th style="width:56px">Docs</th></tr>
+            <tr>
+              <td>
+                <span class="t"><a href="#">R408 — BA Health Architecture Services and Standardization</a></span>
+                <div class="sub">36C24C26Q0018 · Special Notice · NAICS 541612<span class="b navy">matched in P01-DRAFT_BA_IDIQ_PWS….docx</span></div>
+                <div class="snip">…modeling session facilitation utilizing Business Process Model and Notation (<mark>BPMN</mark>) and as needed support for process driven requirements capture…</div>
+              </td>
+              <td class="sub">Veterans Affairs</td>
+              <td class="due">Jul 23 <span class="d">7 days</span></td>
+              <td><span class="docsn">2</span></td>
+            </tr>
+            <tr>
+              <td>
+                <span class="t"><a href="#">SIR — Strategic Sourcing for Various Supplies &amp; Equipment (SAVES)</a></span>
+                <div class="sub">697DCK-25-R-00302 · Solicitation · NAICS 541519 · Partial SB Set-Aside<span class="b navy">matched in Attachment_6__Schedule_B….xlsx</span></div>
+              </td>
+              <td class="sub">Transportation</td>
+              <td class="due">Jul 21 <span class="d">5 days</span></td>
+              <td><span class="docsn">33</span></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <div class="spec-row">
+        <span class="lbl">Specimens</span>
+        <span class="b navy">Solicitation</span><span class="b green">active</span><span class="b amber">due · 5d</span><span class="b gray">archived</span>
+        <span class="go">Primary action</span><span class="ctl">Secondary</span>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="sec">Option B — the Wayfinder Labs variation</h2>
+  <p class="secnote">The requested direction: derived from the actual Wayfinder Labs brand (wordmark ink
+  <code>#061D52</code>, blue <code>#2349A1</code>, green <code>#16A34A</code>, the faceted compass mark, Arimo display) and
+  adapted for dense data work. Ties the platform visibly to the Wayfinder family that ProcessAI already lives in.</p>
+  <div class="frame optB" id="option-b">
+    <div class="frame-label"><span>OPTION B — Wayfinder Labs platform variation</span><span class="tag">"Northstar, by Wayfinder Labs"</span></div>
+    <div class="mock">
+      <div class="mast">
+        <svg class="mark" viewBox="0 0 85 50" aria-hidden="true">
+          <polygon fill="#16A34A" points="71.75,22 84.47,0 54.24,14 42.24,19.5 42.24,37.4 55.91,49.5"/>
+          <polygon fill="#2349A1" points="28.57,49.5 42.24,37.4 42.24,19.5 0,0 11.26,19.5 26.75,46.3"/>
+          <polygon fill="#84A1EB" points="66.7,30.8 54.86,25.3 0,0 55.91,49.5"/>
+          <polygon fill="#7DF090" points="54.24,14 84.47,0 24,0"/>
+        </svg>
+        <span class="word">NORTHSTAR <span class="labs">· Wayfinder Labs</span></span>
+        <nav><a href="#" class="on">Opportunities</a><a href="#">Watchlists</a><a href="#">Protest</a><a href="#">Glossary</a></nav>
+      </div>
+      <div class="body" style="padding-top:22px">
+        <div class="panel">
+          <div class="filters">
+            <input class="inp" value="bpmn">
+            <span class="go">Search corpus</span>
+            <span class="ctl">NAICS — type to filter…</span>
+            <span class="ctl">Active only ▾</span>
+            <span class="ctl">Sort: relevance ▾</span>
+          </div>
+          <div class="statusline">Corpus: <b>710,831</b> notices · 78,811 active · imported <b>today 12:09</b> · <b>2,820</b> with harvested documents</div>
+        </div>
+        <div class="panel">
+          <table class="res">
+            <tr><th>Opportunity</th><th style="width:130px">Agency</th><th style="width:86px">Due</th><th style="width:56px">Docs</th></tr>
+            <tr>
+              <td>
+                <span class="t"><a href="#">R408 — BA Health Architecture Services and Standardization</a></span>
+                <div class="sub"><span class="id">36C24C26Q0018</span> · Special Notice · <span class="id">NAICS 541612</span><span class="b navy">matched in P01-DRAFT_BA_IDIQ_PWS….docx</span></div>
+                <div class="snip">…modeling session facilitation utilizing Business Process Model and Notation (<mark>BPMN</mark>) and as needed support for process driven requirements capture…</div>
+              </td>
+              <td class="sub">Veterans Affairs</td>
+              <td class="due">Jul 23 <span class="d">7 days</span></td>
+              <td><span class="docsn">2</span></td>
+            </tr>
+            <tr>
+              <td>
+                <span class="t"><a href="#">SIR — Strategic Sourcing for Various Supplies &amp; Equipment (SAVES)</a></span>
+                <div class="sub"><span class="id">697DCK-25-R-00302</span> · Solicitation · <span class="id">NAICS 541519</span> · Partial SB Set-Aside<span class="b navy">matched in Attachment_6__Schedule_B….xlsx</span></div>
+              </td>
+              <td class="sub">Transportation</td>
+              <td class="due">Jul 21 <span class="d">5 days</span></td>
+              <td><span class="docsn">33</span></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <div class="spec-row">
+        <span class="lbl">Specimens</span>
+        <span class="b navy">Solicitation</span><span class="b green">active</span><span class="b amber">due · 5d</span><span class="b gray">archived</span>
+        <span class="go">Primary action</span><span class="ctl">Secondary</span>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="sec" id="guidelines">Option B — brand guidelines (the Wayfinder Labs variation, written down)</h2>
+  <p class="secnote">A platform variation, not a re-statement of the marketing brand: same DNA (ink, blue, green, facets,
+  Arimo), tuned for eight-hour data sessions — quieter surfaces, higher-contrast text, color reserved for meaning.</p>
+
+  <div class="spec-grid">
+    <table class="spec">
+      <tr><th colspan="3">Color roles</th></tr>
+      <tr><td><span class="sw" style="background:#061D52"></span><code>#061D52</code></td><td><b>Wayfinder Ink</b></td><td>Masthead, footer, brand moments only. Never body text on white.</td></tr>
+      <tr><td><span class="sw" style="background:#0B1B3D"></span><code>#0B1B3D</code></td><td>Text ink</td><td>Body text. Derived from Wayfinder Ink; 14.9:1 on white.</td></tr>
+      <tr><td><span class="sw" style="background:#2349A1"></span><code>#2349A1</code></td><td>Wayfinder Blue</td><td>Links, informational badges, selected states. 7.4:1 on white.</td></tr>
+      <tr><td><span class="sw" style="background:#15803D"></span><code>#15803D</code></td><td>Action Green</td><td>Primary buttons, success text. The darker cousin of brand green — 4.8:1 on white, AA at any size.</td></tr>
+      <tr><td><span class="sw" style="background:#16A34A"></span><code>#16A34A</code></td><td>Brand Green</td><td>Accents, highlight strokes, positive fills. Decorative — not text on white (3.3:1).</td></tr>
+      <tr><td><span class="sw" style="background:#7DF090"></span><code>#7DF090</code> <span class="sw" style="background:#84A1EB;margin-left:6px"></span><code>#84A1EB</code></td><td>Facet tints</td><td>The logo's light facets. Hairline accents on Ink surfaces (active-nav underline, facet bar) only. Never fills, never text.</td></tr>
+      <tr><td><span class="sw" style="background:#A16207"></span><code>#A16207</code></td><td>Attention</td><td>Deadlines, warnings, degraded states. The only non-brand hue — urgency must not be green or blue.</td></tr>
+      <tr><td><span class="sw" style="background:#F5F7FB"></span><code>#F5F7FB</code></td><td>Canvas</td><td>Page background. Cards are white with <code>#DBE2EF</code> hairlines.</td></tr>
+    </table>
+
+    <table class="spec">
+      <tr><th colspan="2">Type &amp; texture</th></tr>
+      <tr><td><b>Display</b></td><td>Arimo 600–700 — masthead wordmark, page titles. Matches the wordmark's grotesque; uppercase + tracking for the brand line only.</td></tr>
+      <tr><td><b>Body</b></td><td>Inter 400/500/600 at 13.5–14px. Line-height 1.5.</td></tr>
+      <tr><td><b>Identifiers</b></td><td>Roboto Mono for everything the government assigns: solicitation #s, NAICS, CGAC, notice ids. This platform is full of them — mono makes them scannable and copy-safe.</td></tr>
+      <tr><td><b>The facet bar</b></td><td>The one piece of ornament: a 3px four-color rule (Brand Green → facet tints → Blue, the logo's geometry flattened) under the masthead. It is the family signature — use once per page, never inside content.</td></tr>
+      <tr><td><b>Elevation</b></td><td>Hairline borders + <code>0 1px 2px rgba(6,29,82,.06)</code>. One level. Data platforms don't float.</td></tr>
+      <tr><td><b>Radius</b></td><td>10px cards, 6px controls, 999px pills.</td></tr>
+    </table>
+  </div>
+
+  <div class="dd" style="margin-top:18px">
+    <div class="do">
+      <h4>Do</h4>
+      <ul>
+        <li>Reserve color for meaning: green = affirmative/active, blue = informational/navigational, amber = attention, ink = brand.</li>
+        <li>Keep evidence styling (match snippets, highlights) consistent between search results and watchlist hits — same component, same look.</li>
+        <li>State coverage and staleness in the shell (status line) on every corpus-backed surface.</li>
+        <li>Use the compass mark at small sizes; the full wordmark only in the masthead.</li>
+      </ul>
+    </div>
+    <div class="dont">
+      <h4>Don't</h4>
+      <ul>
+        <li>Don't use Brand Green <code>#16A34A</code> or the facet tints for text on white — they fail contrast; that's what Action Green is for.</li>
+        <li>Don't put the facet bar on cards, buttons, or tables — one per page, on the shell.</li>
+        <li>Don't bleed this shell into Meridian deliverables or vice versa; the client-facing brand stays navy/gold serif.</li>
+        <li>Don't introduce new hues per feature; a new state gets a tone from this table or a written amendment here.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="sec">Recommendation &amp; mechanics</h2>
+  <p class="secnote"><b>Recommendation: Option B.</b> The platform joins ProcessAI under one recognizable family
+  (relevant the moment profiles are sold or demoed), the mono-for-identifiers rule does real usability work in a
+  government-ID-saturated UI, and the cost over Option A is near zero because both are a token swap behind
+  <code>src/components/ui</code>. Adoption order: tokens in <code>globals.css</code> → watchlist UI ships on them →
+  existing screens migrate as they're touched. Approve a direction and the watchlist UI debuts on it.</p>
+
+</div>
+</body>
+</html>
